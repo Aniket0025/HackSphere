@@ -8,7 +8,15 @@ const UserSchema = new mongoose.Schema({
         type: String,
         enum: ["user", "admin", "judge", "participate"],
         default: "participate"
-    }
+    },
+    otp: String,
+    otpExpiresAt: Date,
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+
+
 }, { timestamps: true });
 
 export default mongoose.model("User", UserSchema);
