@@ -88,3 +88,72 @@ export const verifyOtp = async (req, res) => {
     await user.save();
     res.json({ message: "User verified successfully" });
 }
+
+
+export const resendOtp = async (req, res) => {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        res.status(400).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+        res.status(400).json({ message: "User already verified" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    user.otp = otp;
+    user.otpExpiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes from now
+    await user.save();
+
+    await sendOtpEmail(email, otp);
+
+    res.json({ message: "OTP resent to email" });
+
+}
+
+export const forgotPassword = async (req, res) => {
+
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        res.status(400).json({ message: "User not found" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    user.otp = otp;
+    user.otpExpiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes from now
+    await user.save();
+    await sendOtpEmail(email, otp);
+    res.json({ message: "OTP sent to email" });
+
+}
+
+export const resetPassword = async (req, res) => {
+
+    const { email, otp, newPassword } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        res.status(400).json({ message: "User not found" });
+    }
+
+    if (user.otp !== otp || user.otpExpiresAt < Date.now()) {
+        return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    user.otp = null;
+    user.otpExpiresAt = null;
+    await user.save();
+    res.json({ message: "Password reset successfully" });
+}
+
