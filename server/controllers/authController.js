@@ -4,15 +4,18 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import sendOtpEmail from '../utils/sendOtpEmail.js';
 
+import asyncHandler from 'express-async-handler';
+
 
 dotenv.config();
 
-export const register = async (req, res) => {
+export const register = asyncHandler(async (req, res) => {
     const { name, email, password, role } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-        return res.status(400).json({ message: "User already exists" });
+        res.status(400);//.json({ message: "User already exists" });
+        throw new Error("User already exists");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -34,9 +37,9 @@ export const register = async (req, res) => {
 
     res.status(201).json({ message: "OTP sent to email. Please Verify." });
 
-};
+});
 
-export const login = async (req, res) => {
+export const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
@@ -62,10 +65,10 @@ export const login = async (req, res) => {
     );
 
     res.json({ token, user });
-};
+});
 
 
-export const verifyOtp = async (req, res) => {
+export const verifyOtp = asyncHandler(async (req, res) => {
     const { email, otp } = req.body;
     const user = await User.findOne({ email });
 
@@ -87,10 +90,10 @@ export const verifyOtp = async (req, res) => {
     user.otpExpiresAt = null;
     await user.save();
     res.json({ message: "User verified successfully" });
-}
+});
 
 
-export const resendOtp = async (req, res) => {
+export const resendOtp = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
     const user = await User.findOne({ email });
@@ -113,9 +116,9 @@ export const resendOtp = async (req, res) => {
 
     res.json({ message: "OTP resent to email" });
 
-}
+});
 
-export const forgotPassword = async (req, res) => {
+export const forgotPassword = asyncHandler(async (req, res) => {
 
     const { email } = req.body;
 
@@ -132,9 +135,9 @@ export const forgotPassword = async (req, res) => {
     await sendOtpEmail(email, otp);
     res.json({ message: "OTP sent to email" });
 
-}
+});
 
-export const resetPassword = async (req, res) => {
+export const resetPassword = asyncHandler(async (req, res) => {
 
     const { email, otp, newPassword } = req.body;
 
@@ -155,5 +158,5 @@ export const resetPassword = async (req, res) => {
     user.otpExpiresAt = null;
     await user.save();
     res.json({ message: "Password reset successfully" });
-}
+});
 
